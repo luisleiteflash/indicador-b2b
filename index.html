@@ -211,6 +211,7 @@
   }
   #alerta b { color: var(--neg); }
   #alerta.hide { display: none; }
+  .chip.hide { display: none; }
 
   @media (max-aspect-ratio: 1/1) {
     .strip { grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, 1fr); }
@@ -373,29 +374,36 @@ window.__PULSO_INIT = function () {
   const L = P.linhas.slice().sort((a, b) => a.data < b.data ? -1 : 1);
   const DIAS_UTEIS = 20;
 
-  /* receita do dia segue a mesma regra da planilha:
-     só há valor quando o dia é consecutivo ao anterior; virada de mês reinicia o acumulado */
-  function delta(atual, anterior, campo) {
+  /* Receita medida sempre em relação ao lançamento anterior, mesmo quando há
+     intervalo (fim de semana, feriado). Na virada de mês o acumulado reinicia,
+     então o valor do lançamento já é a receita do mês corrente. */
+  function periodo(atual, anterior) {
     if (!anterior) return null;
     const a = d(anterior.data), b = d(atual.data);
-    const consecutivo = (b - a) === 86400000;
-    if (!consecutivo) return null;
-    if (a.getMonth() !== b.getMonth()) return atual[campo];   /* novo mês: acumulado reinicia */
-    return atual[campo] - anterior[campo];
+    const mesNovo = a.getMonth() !== b.getMonth() || a.getFullYear() !== b.getFullYear();
+    return {
+      mesNovo: mesNovo,
+      ini: mesNovo ? iso(new Date(b.getFullYear(), b.getMonth(), 1)) : addDays(anterior.data, 1),
+      fim: atual.data
+    };
+  }
+  function delta(atual, anterior, per, campo) {
+    if (!per) return null;
+    return per.mesNovo ? atual[campo] : atual[campo] - anterior[campo];
   }
 
   L.forEach((r, i) => {
     const ant = i > 0 ? L[i - 1] : null;
-    r.dia  = delta(r, ant, "b2b");
-    r.dFtl = delta(r, ant, "ftl");
-    r.dOpd = delta(r, ant, "opd");
-    r.dExp = delta(r, ant, "exp");
-    r.dCli = CLIENTES.map((_, k) => {
-      if (!ant) return null;
-      const a = d(ant.data), b = d(r.data);
-      if ((b - a) !== 86400000) return null;
-      if (a.getMonth() !== b.getMonth()) return r.cli[k];
-      return r.cli[k] - (ant.cli[k] ?? 0);
+    const per = periodo(r, ant);
+    r.per   = per;
+    r.multi = per ? per.ini !== per.fim : false;   /* cobre mais de um dia */
+    r.dia   = delta(r, ant, per, "b2b");
+    r.dFtl  = delta(r, ant, per, "ftl");
+    r.dOpd  = delta(r, ant, per, "opd");
+    r.dExp  = delta(r, ant, per, "exp");
+    r.dCli  = CLIENTES.map(function (_, k) {
+      if (!per) return null;
+      return per.mesNovo ? r.cli[k] : r.cli[k] - (ant.cli[k] || 0);
     });
   });
 
@@ -429,12 +437,22 @@ window.__PULSO_INIT = function () {
 
   if (typeof hoje.dia === "number") {
     el("k-dia").innerHTML = money(hoje.dia);
-    el("k-dia-f").textContent = "gerado em " + ddmm(hoje.data);
-    const mediaCorrida = hoje.b2b / d(hoje.data).getDate();
-    const vs = mediaCorrida ? hoje.dia / mediaCorrida - 1 : 0;
+    el("k-dia-f").textContent = hoje.multi
+      ? "de " + ddmm(hoje.per.ini) + " a " + ddmm(hoje.per.fim)
+      : "gerado em " + ddmm(hoje.data);
+    /* comparativo com a média do mês: só faz sentido a partir do 2º dia,
+       porque no dia 1 o acumulado é o próprio dia */
+    const diaDoMes = d(hoje.data).getDate();
     const chip = el("k-dia-chip");
-    chip.className = "chip " + (vs >= 0 ? "up" : "down");
-    chip.textContent = (vs >= 0 ? "▲ +" : "▼ ") + pct(Math.abs(vs)) + " vs média";
+    if (diaDoMes >= 2) {
+      const mediaCorrida = hoje.b2b / diaDoMes;
+      const vs = mediaCorrida ? hoje.dia / mediaCorrida - 1 : 0;
+      chip.className = "chip " + (vs >= 0 ? "up" : "down");
+      chip.textContent = (vs >= 0 ? "▲ +" : "▼ ") + pct(Math.abs(vs)) + " vs média";
+    } else {
+      chip.className = "chip hide";
+      chip.textContent = "";
+    }
   } else {
     el("k-dia").innerHTML = "—";
     el("k-dia-f").textContent = "primeiro dia da série (base)";
@@ -485,14 +503,18 @@ window.__PULSO_INIT = function () {
       noteD.innerHTML = '<div class="empty">A primeira linha da planilha é o ponto de partida. ' +
         'Registre o dia seguinte na aba “Lançamentos” para começar a medir a evolução diária.</div>';
     } else {
-      stacked("plot-daily", dias.map(r => ({ label: ddmm(r.data), total: r.dia, ftl: r.dFtl, opd: r.dOpd, exp: r.dExp })),
-              { minSlots: 3, aria: "Receita diária por canal" });
+      stacked("plot-daily", dias.map(r => ({
+        label: ddmm(r.data) + (r.multi ? "*" : ""), total: r.dia, ftl: r.dFtl, opd: r.dOpd, exp: r.dExp
+      })), { minSlots: 3, aria: "Receita diária por canal" });
       if (dias.length >= 2) {
         const a = dias[dias.length - 2], b = dias[dias.length - 1];
         const v = a.dia ? b.dia / a.dia - 1 : 0;
         noteD.innerHTML = ddmm(b.data) + " vs " + ddmm(a.data) + ': <strong style="color:' +
           (v >= 0 ? "var(--pos)" : "var(--neg)") + '">' + (v >= 0 ? "+" : "") + pct(v) + "</strong> · R$ " +
           cur0(Math.abs(b.dia - a.dia)) + " de diferença, puxada por " + (b.dOpd > b.dFtl ? "OPD" : "FTL") + ".";
+        if (dias.some(x => x.multi)) {
+          noteD.innerHTML += ' <span style="opacity:.75">* inclui os dias sem lançamento desde o fechamento anterior.</span>';
+        }
       } else {
         noteD.textContent = "Registre mais um dia para comparar a evolução.";
       }
