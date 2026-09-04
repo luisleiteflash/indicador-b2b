@@ -1,6 +1,6 @@
 /* gerado automaticamente a partir da planilha - nao editar a mao */
 window.PULSO = {
-  atualizado: "04/09/2026 15:30",
+  atualizado: "04/09/2026 16:00",
   arquivo: "Pulso B2B - painel v2 (1).xlsx",
   clientes: ["Casas Bahia", "Simpress", "Amazon", "Amazon Transferência", "Magalu", "Amazon Hub", "Liquitudo", "Orient", "Mercado livre"],
   linhas: [
