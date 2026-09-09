@@ -262,7 +262,7 @@
         <div class="v" id="s-period">—</div>
       </div>
       <div>
-        <div class="k">Último fechamento</div>
+        <div class="k">Fechamento recebido</div>
         <div class="v live"><span class="pulse"></span><span id="s-date">—</span></div>
       </div>
           </div>
@@ -396,39 +396,6 @@ window.__PULSO_INIT = function () {
   const L = P.linhas.slice().sort((a, b) => a.data < b.data ? -1 : 1);
   const DIAS_UTEIS = 20;
 
-  /* Receita medida sempre em relação ao lançamento anterior, mesmo quando há
-     intervalo (fim de semana, feriado). Na virada de mês o acumulado reinicia,
-     então o valor do lançamento já é a receita do mês corrente. */
-  function periodo(atual, anterior) {
-    if (!anterior) return null;
-    const a = d(anterior.data), b = d(atual.data);
-    const mesNovo = a.getMonth() !== b.getMonth() || a.getFullYear() !== b.getFullYear();
-    return {
-      mesNovo: mesNovo,
-      ini: mesNovo ? iso(new Date(b.getFullYear(), b.getMonth(), 1)) : addDays(anterior.data, 1),
-      fim: atual.data
-    };
-  }
-  function delta(atual, anterior, per, campo) {
-    if (!per) return null;
-    return per.mesNovo ? atual[campo] : atual[campo] - anterior[campo];
-  }
-
-  L.forEach((r, i) => {
-    const ant = i > 0 ? L[i - 1] : null;
-    const per = periodo(r, ant);
-    r.per   = per;
-    r.multi = per ? per.ini !== per.fim : false;   /* cobre mais de um dia */
-    r.dia   = delta(r, ant, per, "b2b");
-    r.dFtl  = delta(r, ant, per, "ftl");
-    r.dOpd  = delta(r, ant, per, "opd");
-    r.dExp  = delta(r, ant, per, "exp");
-    r.dCli  = CLIENTES.map(function (_, k) {
-      if (!per) return null;
-      return per.mesNovo ? r.cli[k] : r.cli[k] - (ant.cli[k] || 0);
-    });
-  });
-
   /* ---- dias uteis: exclui sabados, domingos e feriados nacionais ----
      Se a operacao trabalha no Carnaval / Corpus Christi, apague as duas
      linhas marcadas com (facultativo) mais abaixo. */
@@ -477,6 +444,57 @@ window.__PULSO_INIT = function () {
     return n;
   }
 
+  /* Receita medida sempre em relação ao lançamento anterior, mesmo quando há
+     intervalo (fim de semana, feriado). Na virada de mês o acumulado reinicia,
+     então o valor do lançamento já é a receita do mês corrente. */
+  function periodo(atual, anterior) {
+    if (!anterior) return null;
+    const a = d(anterior.data), b = d(atual.data);
+    const mesNovo = a.getMonth() !== b.getMonth() || a.getFullYear() !== b.getFullYear();
+    return {
+      mesNovo: mesNovo,
+      ini: mesNovo ? iso(new Date(b.getFullYear(), b.getMonth(), 1)) : addDays(anterior.data, 1),
+      fim: atual.data
+    };
+  }
+  function delta(atual, anterior, per, campo) {
+    if (!per) return null;
+    return per.mesNovo ? atual[campo] : atual[campo] - anterior[campo];
+  }
+
+  /* A planilha e lancada com o fechamento recebido no dia, mas os numeros sao
+     os realizados ate o dia util anterior. Entao cada linha passa a valer pela
+     sua data de referencia (o realizado); a data do lancamento fica guardada
+     para o quadro Previsao, que e o unico com valor esperado para o dia. */
+  function diaUtilAnterior(dataISO) {
+    const t = d(dataISO);
+    do { t.setDate(t.getDate() - 1); } while (!ehUtil(t));
+    return iso(t);
+  }
+  L.forEach((r, i) => {
+    r.dataLanc = r.data;
+    let ref = diaUtilAnterior(r.data);
+    /* se o lancamento anterior ja ocupou essa referencia (acontece quando se
+       lanca em feriado), usa simplesmente o dia anterior */
+    if (i > 0 && ref <= L[i - 1].data) ref = addDays(r.data, -1);
+    r.data = ref;
+  });
+
+  L.forEach((r, i) => {
+    const ant = i > 0 ? L[i - 1] : null;
+    const per = periodo(r, ant);
+    r.per   = per;
+    r.multi = per ? per.ini !== per.fim : false;   /* cobre mais de um dia */
+    r.dia   = delta(r, ant, per, "b2b");
+    r.dFtl  = delta(r, ant, per, "ftl");
+    r.dOpd  = delta(r, ant, per, "opd");
+    r.dExp  = delta(r, ant, per, "exp");
+    r.dCli  = CLIENTES.map(function (_, k) {
+      if (!per) return null;
+      return per.mesNovo ? r.cli[k] : r.cli[k] - (ant.cli[k] || 0);
+    });
+  });
+
   const hoje = L[L.length - 1];
   const ant = L.length > 1 ? L[L.length - 2] : null;
   const provisao = (hoje.prevMeli || 0) + (hoje.prevHub || 0);
@@ -496,7 +514,7 @@ window.__PULSO_INIT = function () {
 
   /* ============ topo + KPIs ============ */
   el("s-sync").textContent = P.atualizado || "—";
-  el("s-date").textContent = longo(hoje.data);
+  el("s-date").textContent = longo(hoje.dataLanc);
   el("s-period").textContent = "01/" + mes2 + " a " + ddmm(hoje.data);
 
   el("k-acum").innerHTML = money(hoje.b2b);
@@ -641,7 +659,7 @@ window.__PULSO_INIT = function () {
         '<div class="track"><i class="fill" style="display:block;width:' + (c.v / maxC * 100).toFixed(1) + '%;background:var(' + c.c + ')"></i></div>' +
       "</div>").join("");
 
-    el("fc-sub").textContent = "para " + ddmm(addDays(hoje.data, 3));
+    el("fc-sub").textContent = "para " + ddmm(hoje.dataLanc);
     el("fc-total").textContent = "R$ " + cur0(provisao);
     el("fc-rotas").textContent = ((hoje.rotasMeli || 0) + (hoje.rotasHub || 0)) + " rotas previstas";
     el("fc-list").innerHTML = [
