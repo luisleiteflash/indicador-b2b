@@ -262,7 +262,7 @@
         <div class="v" id="s-period">—</div>
       </div>
       <div>
-        <div class="k">Fechamento recebido</div>
+        <div class="k">Último fechamento</div>
         <div class="v live"><span class="pulse"></span><span id="s-date">—</span></div>
       </div>
           </div>
@@ -462,23 +462,14 @@ window.__PULSO_INIT = function () {
     return per.mesNovo ? atual[campo] : atual[campo] - anterior[campo];
   }
 
-  /* A planilha e lancada com o fechamento recebido no dia, mas os numeros sao
-     os realizados ate o dia util anterior. Entao cada linha passa a valer pela
-     sua data de referencia (o realizado); a data do lancamento fica guardada
-     para o quadro Previsao, que e o unico com valor esperado para o dia. */
-  function diaUtilAnterior(dataISO) {
+  /* A data de cada linha da planilha e a data do realizado (o lancamento de hoje
+     traz o fechamento de ontem, ja datado como ontem). O quadro Previsao e o
+     unico que olha para frente: vale para o proximo dia util. */
+  function proximoDiaUtil(dataISO) {
     const t = d(dataISO);
-    do { t.setDate(t.getDate() - 1); } while (!ehUtil(t));
+    do { t.setDate(t.getDate() + 1); } while (!ehUtil(t));
     return iso(t);
   }
-  L.forEach((r, i) => {
-    r.dataLanc = r.data;
-    let ref = diaUtilAnterior(r.data);
-    /* se o lancamento anterior ja ocupou essa referencia (acontece quando se
-       lanca em feriado), usa simplesmente o dia anterior */
-    if (i > 0 && ref <= L[i - 1].data) ref = addDays(r.data, -1);
-    r.data = ref;
-  });
 
   L.forEach((r, i) => {
     const ant = i > 0 ? L[i - 1] : null;
@@ -514,7 +505,7 @@ window.__PULSO_INIT = function () {
 
   /* ============ topo + KPIs ============ */
   el("s-sync").textContent = P.atualizado || "—";
-  el("s-date").textContent = longo(hoje.dataLanc);
+  el("s-date").textContent = longo(hoje.data);
   el("s-period").textContent = "01/" + mes2 + " a " + ddmm(hoje.data);
 
   el("k-acum").innerHTML = money(hoje.b2b);
@@ -659,7 +650,7 @@ window.__PULSO_INIT = function () {
         '<div class="track"><i class="fill" style="display:block;width:' + (c.v / maxC * 100).toFixed(1) + '%;background:var(' + c.c + ')"></i></div>' +
       "</div>").join("");
 
-    el("fc-sub").textContent = "para " + ddmm(hoje.dataLanc);
+    el("fc-sub").textContent = "para " + ddmm(proximoDiaUtil(hoje.data));
     el("fc-total").textContent = "R$ " + cur0(provisao);
     el("fc-rotas").textContent = ((hoje.rotasMeli || 0) + (hoje.rotasHub || 0)) + " rotas previstas";
     el("fc-list").innerHTML = [
