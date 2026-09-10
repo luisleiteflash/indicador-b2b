@@ -141,17 +141,17 @@
   .col { display: grid; grid-template-rows: 1.15fr 1fr; gap: 0.8rem; min-height: 0; }
   .phead { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; flex-wrap: wrap; }
   .panel h2 {
-    font-family: var(--font-ui); font-weight: 600; font-size: 1.05rem;
+    font-family: var(--font-ui); font-weight: 600; font-size: 1.28rem;
     letter-spacing: -.01em; margin: 0;
   }
   .phead .sub {
-    font-family: var(--font-ui); font-size: 0.7rem;
+    font-family: var(--font-ui); font-size: 0.82rem;
     letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
   }
   .legend { display: flex; gap: .8rem; }
   .legend span {
     display: inline-flex; align-items: center; gap: .35rem;
-    font-family: var(--font-ui); font-size: 0.72rem; color: var(--ink-2);
+    font-family: var(--font-ui); font-size: 0.86rem; color: var(--ink-2);
   }
   .dot { width: .62rem; height: .62rem; border-radius: 2px; display: inline-block; flex: none; }
 
@@ -159,14 +159,14 @@
   .plot svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .ax { font-family: var(--font-ui); fill: var(--ink-3); }
   .barlab { font-family: var(--font-ui); font-weight: 700; fill: var(--ink); }
-  .foot-note { font-size: 0.82rem; color: var(--ink-3); line-height: 1.35; }
+  .foot-note { font-size: 0.95rem; color: var(--ink-3); line-height: 1.35; }
   .foot-note strong { color: var(--ink); }
 
   .rows { display: flex; flex-direction: column; gap: .55rem; flex: 1 1 auto; justify-content: space-evenly; }
   .row-item { display: grid; grid-template-columns: 1fr auto; gap: .35rem .6rem; align-items: baseline; }
-  .row-name { font-size: 1.18rem; color: var(--ink-2); display: inline-flex; align-items: center; gap: .45rem; }
+  .row-name { font-size: 1.4rem; color: var(--ink-2); display: inline-flex; align-items: center; gap: .45rem; }
   .row-val {
-    font-family: var(--font-ui); font-size: 1.18rem; font-weight: 600;
+    font-family: var(--font-ui); font-size: 1.4rem; font-weight: 600;
     font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap;
   }
   .row-val em { font-style: normal; color: var(--ink-3); font-weight: 400; margin-left: .5rem; }
@@ -175,10 +175,10 @@
 
   .fc-total { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
   .fc-total b {
-    font-family: var(--font-ui); font-weight: 700; font-size: 1.9rem;
+    font-family: var(--font-ui); font-weight: 700; font-size: 2.15rem;
     letter-spacing: -.03em; font-variant-numeric: tabular-nums;
   }
-  .fc-total span { font-size: 0.8rem; color: var(--ink-3); }
+  .fc-total span { font-size: 0.95rem; color: var(--ink-3); }
   .fc-list { display: flex; flex-direction: column; gap: .5rem; flex: 1 1 auto; }
   .fc-item {
     display: flex; align-items: center; justify-content: space-between; gap: .6rem;
@@ -186,13 +186,13 @@
     padding: .45rem .7rem; background: var(--card-2);
     border: 1px solid var(--line-soft); border-radius: .55rem;
   }
-  .fc-item .n { font-size: 0.98rem; }
+  .fc-item .n { font-size: 1.16rem; }
   .fc-item .r {
     display: block; font-family: var(--font-ui);
-    font-size: 0.68rem; color: var(--ink-3); letter-spacing: .06em; margin-top: .05rem;
+    font-size: 0.8rem; color: var(--ink-3); letter-spacing: .06em; margin-top: .05rem;
   }
   .fc-item .v {
-    font-family: var(--font-ui); font-size: 0.98rem; font-weight: 600;
+    font-family: var(--font-ui); font-size: 1.16rem; font-weight: 600;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
 
@@ -204,14 +204,14 @@
     padding-bottom: .3rem; border-bottom: 1px solid var(--line-soft);
   }
   .cli-row:last-child { border-bottom: none; }
-  .cli-name { font-size: 0.95rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cli-name { font-size: 1.14rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .cli-val {
-    font-family: var(--font-ui); font-size: 0.95rem; font-weight: 500;
+    font-family: var(--font-ui); font-size: 1.14rem; font-weight: 500;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   .cli-dlt {
-    font-family: var(--font-ui); font-size: 0.84rem; font-weight: 600;
-    font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 5.5rem;
+    font-family: var(--font-ui); font-size: 1rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 6.2rem;
   }
   .cli-dlt.z { color: var(--ink-3); font-weight: 400; }
   .cli-dlt.p { color: var(--pos); }
@@ -558,14 +558,16 @@ window.__PULSO_INIT = function () {
     const W = host.clientWidth, H = host.clientHeight;
     if (!W || !H) return;
     const u = rem();
-    const pad = { t: u * 1.6, r: u * 0.5, b: u * 1.6, l: u * 4.3 };
+    const alterna = series.length > 6;   /* rotulos em zigue-zague quando ha muitas barras */
+    const pad = { t: u * (alterna ? 2.7 : 1.9), r: u * 0.5, b: u * 1.9, l: u * 5.0 };
     const iw = Math.max(W - pad.l - pad.r, 10), ih = Math.max(H - pad.t - pad.b, 10);
     const max = Math.max(...series.map(s => s.total)) * 1.2 || 1;
     const slots = Math.max(series.length, opts.minSlots || 1);
     const step = iw / slots;
     const bw = Math.min(u * 4.6, step * 0.46);
     const y = v => pad.t + ih - (v / max) * ih;
-    const fsAx = (u * 0.68).toFixed(1), fsLab = (u * 0.86).toFixed(1);
+    const fsAx  = Math.min(u * 0.82, step * 0.20).toFixed(1);
+    const fsLab = Math.min(u * 1.02, step * 0.215).toFixed(1);
     let g = "";
     for (let i = 0; i <= 4; i++) {
       const v = max / 4 * i, yy = y(v);
@@ -580,7 +582,8 @@ window.__PULSO_INIT = function () {
         g += '<rect x="' + x + '" y="' + yy + '" width="' + bw + '" height="' + Math.max(h, 1) + '" rx="' + (k === 2 ? 3 : 0) + '" fill="' + css(tok) + '"/>';
         acc += h;
       });
-      g += '<text class="barlab" font-size="' + fsLab + '" x="' + cx + '" y="' + (pad.t + ih - acc - u * 0.45) + '" text-anchor="middle">' + curK(s.total) + '</text>';
+      const yLab = pad.t + ih - acc - u * 0.45 - (alterna && i % 2 === 1 ? parseFloat(fsLab) * 1.25 : 0);
+      g += '<text class="barlab" font-size="' + fsLab + '" x="' + cx + '" y="' + yLab + '" text-anchor="middle">' + curK(s.total) + '</text>';
       g += '<text class="ax" font-size="' + fsAx + '" x="' + cx + '" y="' + (H - u * 0.45) + '" text-anchor="middle">' + s.label + '</text>';
     });
     g += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + (pad.t + ih) + '" y2="' + (pad.t + ih) + '" stroke="' + css('--line') + '" stroke-width="1"/>';
@@ -622,7 +625,7 @@ window.__PULSO_INIT = function () {
       noteW.innerHTML = '<div class="empty">O comparativo semanal aparece assim que houver ao menos um dia com receita diária apurada.</div>';
     } else {
       stacked("plot-weekly", sem.map(s => ({
-        label: ddmm(s.ini) + "–" + ddmm(s.fim), total: s.total, ftl: s.ftl, opd: s.opd, exp: s.exp
+        label: ddmm(s.ini), total: s.total, ftl: s.ftl, opd: s.opd, exp: s.exp
       })), { minSlots: 2, aria: "Receita por semana" });
       if (sem.length >= 2) {
         const v = sem[sem.length - 2].total ? sem[sem.length - 1].total / sem[sem.length - 2].total - 1 : 0;
