@@ -196,26 +196,47 @@
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
 
-  .cli { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; justify-content: space-between; }
+  .cli { display: flex; flex-direction: column; gap: .5rem; flex: 1 1 auto; min-height: 0; }
+  .cli-grupo { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+
+  /* cabecalho do canal: FTL / OPD / Expresso */
+  .cli-cab {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 0 .5rem;
+    align-items: baseline; padding-bottom: .18rem; margin-bottom: .28rem;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .cli-cab .nm {
+    font-family: var(--font-ui); font-size: .84rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: .35rem;
+  }
+  .cli-cab .tt {
+    font-family: var(--font-ui); font-size: 1.04rem; font-weight: 700;
+    font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right;
+  }
+  .cli-cab .pc {
+    font-family: var(--font-ui); font-size: .8rem; font-weight: 600; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+
   .cli-row {
     display: grid; grid-template-columns: 1fr auto auto;
-    gap: .3rem .7rem; align-items: baseline; align-content: start;
-    flex: 1 1 0; min-height: 0;
-    padding-bottom: .3rem; border-bottom: 1px solid var(--line-soft);
+    gap: .16rem .6rem; align-items: baseline; align-content: center;
+    flex: 1 1 0; min-height: 0; padding-bottom: .16rem;
   }
-  .cli-row:last-child { border-bottom: none; }
-  .cli-name { font-size: 1.14rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cli-name { font-size: 1.02rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cli-name.outros { color: var(--ink-3); }
   .cli-val {
-    font-family: var(--font-ui); font-size: 1.14rem; font-weight: 500;
+    font-family: var(--font-ui); font-size: 1.02rem; font-weight: 500;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   .cli-dlt {
-    font-family: var(--font-ui); font-size: 1rem; font-weight: 600;
-    font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 6.2rem;
+    font-family: var(--font-ui); font-size: .9rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 5.4rem;
   }
   .cli-dlt.z { color: var(--ink-3); font-weight: 400; }
   .cli-dlt.p { color: var(--pos); }
-  .cli-bar { grid-column: 1 / -1; height: .28rem; border-radius: .2rem; background: var(--line-soft); overflow: hidden; }
+  .cli-bar { grid-column: 1 / -1; height: .24rem; border-radius: .2rem; background: var(--line-soft); overflow: hidden; }
   .cli-bar i { display: block; height: 100%; border-radius: .2rem; background: var(--accent); }
 
   .empty {
@@ -663,21 +684,70 @@ window.__PULSO_INIT = function () {
       '<div class="fc-item"><div><span class="n">' + i.n + '</span><span class="r">' + i.r + ' rotas</span></div>' +
       '<div class="v">R$ ' + cur(i.v) + "</div></div>").join("");
 
-    el("cli-sub").textContent = "acum. · variação do dia";
-    const lista = CLIENTES.map((n, k) => ({ n: n, v: hoje.cli[k] || 0, dv: hoje.dCli[k] }))
-                          .filter(c => c.v !== 0)
-                          .sort((a, b) => b.v - a.v)
-                          .slice(0, 12);
-    const maxV = Math.max(...lista.map(c => c.v)) || 1;
-    el("cli").innerHTML = lista.map(c => {
+    /* ---- clientes agrupados por canal (FTL / OPD / Expresso) ---- */
+    el("cli-sub").textContent = "por canal · acum. · variação do dia";
+
+    /* o canal de cada cliente vem do dados.js (canais.csv + nome da coluna).
+       Sem essa informacao - planilha antiga - tudo cai em um grupo unico.    */
+    const CANAIS = window.PULSO.canais || [];
+    const GRUPOS = [
+      { id: "ftl", nome: "FTL",      cor: "--ftl", total: hoje.ftl || 0 },
+      { id: "opd", nome: "OPD",      cor: "--opd", total: hoje.opd || 0 },
+      { id: "exp", nome: "Expresso", cor: "--exp", total: hoje.exp || 0 }
+    ];
+    const MAX_LINHAS = 12;   /* cabe na TV; o excedente vira "Outros" */
+
+    const todos = CLIENTES.map((n, k) => ({
+      n: n, v: hoje.cli[k] || 0, dv: hoje.dCli[k], canal: CANAIS[k] || "opd"
+    })).filter(c => c.v !== 0);
+
+    const maxV = Math.max.apply(null, todos.map(c => c.v).concat([1]));
+
+    const grupos = GRUPOS.map(g => ({
+      g: g,
+      itens: todos.filter(c => c.canal === g.id).sort((a, b) => b.v - a.v)
+    })).filter(x => x.itens.length > 0);
+
+    /* se nao couber, encolhe o maior grupo juntando a cauda em "Outros" */
+    let linhas = grupos.reduce((s, x) => s + x.itens.length, 0);
+    while (linhas > MAX_LINHAS) {
+      const maior = grupos.slice().sort((a, b) => b.itens.length - a.itens.length)[0];
+      if (!maior || maior.itens.length < 3) break;
+      const corte = maior.itens.length - 1;
+      const resto = maior.itens.splice(corte - 1);
+      maior.itens.push({
+        n: "Outros (" + resto.length + ")", outros: true, dv: null,
+        v: resto.reduce((a, b) => a + b.v, 0)
+      });
+      linhas = grupos.reduce((s, x) => s + x.itens.length, 0);
+    }
+
+    const linhaCli = c => {
       const zero = c.dv === null || typeof c.dv !== "number" || Math.abs(c.dv) < 0.01;
       const cls = zero ? "z" : c.dv > 0 ? "p" : "n";
       const txt = zero ? "—" : (c.dv > 0 ? "+" : "−") + cur0(Math.abs(c.dv));
       return '<div class="cli-row">' +
-        '<div class="cli-name">' + c.n + "</div>" +
+        '<div class="cli-name' + (c.outros ? " outros" : "") + '">' + c.n + "</div>" +
         '<div class="cli-val">' + cur0(c.v) + "</div>" +
         '<div class="cli-dlt ' + cls + '">' + txt + "</div>" +
-        '<div class="cli-bar"><i style="width:' + (c.v / maxV * 100).toFixed(1) + '%"></i></div>' +
+        '<div class="cli-bar"><i style="width:' + (c.v / maxV * 100).toFixed(1) +
+          '%;background:var(' + c.cor + ')"></i></div>' +
+      "</div>";
+    };
+
+    el("cli").innerHTML = grupos.map(x => {
+      const soma = x.itens.reduce((a, b) => a + b.v, 0);
+      /* o total do canal vem da planilha (colunas C/D/E); se faltar, usa a soma */
+      const total = x.g.total || soma;
+      const share = hoje.b2b ? total / hoje.b2b : 0;
+      return '<div class="cli-grupo" style="flex-grow:' + x.itens.length + '">' +
+        '<div class="cli-cab">' +
+          '<div class="nm" style="color:var(' + x.g.cor + ')">' +
+            '<i class="dot" style="background:var(' + x.g.cor + ')"></i>' + x.g.nome + "</div>" +
+          '<div class="pc">' + pct(share, 1) + " do B2B</div>" +
+          '<div class="tt">' + cur0(total) + "</div>" +
+        "</div>" +
+        x.itens.map(c => linhaCli(Object.assign({ cor: x.g.cor }, c))).join("") +
       "</div>";
     }).join("");
   }
