@@ -1,9 +1,9 @@
 /* gerado automaticamente a partir da planilha - nao editar a mao */
 window.PULSO = {
-  atualizado: "24/09/2026 16:00",
+  atualizado: "24/09/2026 17:24",
   arquivo: "Pulso B2B - painel v2 (1).xlsx",
   clientes: ["Casas Bahia", "Simpress OPD", "Simpress FTL", "Amazon", "Amazon Transferência", "Magalu", "Amazon Hub", "Liquitudo", "OI", "NUTRIAGRO", "Orient", "Mercado livre"],
-  canais: ["ftl", "opd", "ftl", "opd", "opd", "ftl", "opd", "opd", "exp", "opd", "exp", "opd"],
+  canais: ["ftl", "opd", "ftl", "opd", "opd", "ftl", "opd", "opd", "exp", "exp", "exp", "opd"],
   linhas: [
     { "data":"2026-09-03", "b2b":743050.31, "ftl":16678.73, "opd":712239.38, "exp":14132.2, "prevMeli":18391.71, "rotasMeli":22, "prevHub":2391.35, "rotasHub":5, "cli":[16678.73, 5983.36, 0, 20193.14, 0, 0, 64440.75, 0, 0, 0, 14132.2, 621622.12] },
     { "data":"2026-09-04", "b2b":779348.37, "ftl":23468.23, "opd":741747.94, "exp":14132.2, "prevMeli":178968.8, "rotasMeli":273, "prevHub":11821.34, "rotasHub":32, "cli":[23468.2284772727, 7977.82, 0, 26924.19, 0, 0, 66832.100000000006, 0, 0, 0, 14132.2, 640013.82999999996] },
